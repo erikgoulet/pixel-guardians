@@ -87,7 +87,10 @@ class Game {
         const startSoundtrackOnce = () => {
             if (this.state === 'menu' && Audio.enabled) {
                 Audio.resume();
-                Audio.startSoundtrack();
+                // Small delay to ensure context is fully resumed
+                setTimeout(() => {
+                    Audio.startSoundtrack();
+                }, 50);
             }
             document.removeEventListener('click', startSoundtrackOnce);
             document.removeEventListener('touchstart', startSoundtrackOnce);
@@ -108,7 +111,6 @@ class Game {
         
         // Setup mute button
         this.muteButton.addEventListener('click', () => {
-            const wasEnabled = Audio.enabled;
             Audio.toggle();
             
             // Update button state
@@ -118,17 +120,9 @@ class Game {
                 this.muteButton.classList.add('muted');
             }
             
-            // Handle soundtrack based on game state
-            if (this.state === 'menu' || this.state === 'gameover') {
-                if (Audio.enabled && !wasEnabled) {
-                    // Resume audio context first (important for mobile)
-                    Audio.resume();
-                    // Small delay to ensure context is ready
-                    setTimeout(() => {
-                        Audio.startSoundtrack();
-                    }, 100);
-                }
-                // Note: stopSoundtrack is now called in Audio.toggle() when disabling
+            // Resume audio context if needed (for mobile)
+            if (Audio.enabled && Audio.audioContext && Audio.audioContext.state === 'suspended') {
+                Audio.resume();
             }
         });
         

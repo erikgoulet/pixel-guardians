@@ -114,9 +114,19 @@ const Audio = {
     toggle() {
         this.enabled = !this.enabled;
         
-        // Stop soundtrack if audio is disabled
-        if (!this.enabled && this.soundtrack.isPlaying) {
-            this.stopSoundtrack();
+        // Mute/unmute soundtrack gain instead of stopping it
+        if (this.soundtrack.gainNode) {
+            if (this.enabled) {
+                // Unmute - ramp up volume
+                this.soundtrack.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+                this.soundtrack.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                this.soundtrack.gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.1);
+            } else {
+                // Mute - ramp down volume
+                this.soundtrack.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+                this.soundtrack.gainNode.gain.setValueAtTime(this.soundtrack.gainNode.gain.value, this.audioContext.currentTime);
+                this.soundtrack.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+            }
         }
         
         return this.enabled;
@@ -152,7 +162,15 @@ const Audio = {
     // Start menu soundtrack
     startSoundtrack() {
         console.log('Starting soundtrack...', { enabled: this.enabled, context: !!this.audioContext, isPlaying: this.soundtrack.isPlaying });
-        if (!this.enabled || !this.audioContext || this.soundtrack.isPlaying) return;
+        if (!this.enabled || !this.audioContext) return;
+        
+        // Stop any existing soundtrack first to prevent doubling
+        if (this.soundtrack.isPlaying) {
+            this.stopSoundtrack();
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => this._startSoundtrackInternal(), 100);
+            return;
+        }
         
         // Resume context if needed
         if (this.audioContext.state === 'suspended') {
@@ -237,7 +255,7 @@ const Audio = {
     
     // Play next note in arpeggio
     playNextNote() {
-        if (!this.soundtrack.isPlaying || !this.audioContext) return;
+        if (!this.soundtrack.isPlaying || !this.audioContext || !this.enabled) return;
         
         try {
             const now = this.audioContext.currentTime;
@@ -251,12 +269,16 @@ const Audio = {
             osc.type = 'sine';
             osc.frequency.value = note;
             
-            // Simple direct connection to destination
+            // Set note volume
             noteGain.gain.value = 0.15;
             
-            // Connect directly to destination (bypass the main gain for now)
+            // Connect through main gain node for proper muting
             osc.connect(noteGain);
-            noteGain.connect(this.audioContext.destination);
+            if (this.soundtrack.gainNode) {
+                noteGain.connect(this.soundtrack.gainNode);
+            } else {
+                noteGain.connect(this.audioContext.destination);
+            }
             
             // Play
             osc.start(now);
