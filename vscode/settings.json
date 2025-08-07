@@ -1,0 +1,48 @@
+{
+    "liveServer.settings.port": 5501,
+    "liveServer.settings.root": "/",
+    "liveServer.settings.CustomBrowser": "chrome",
+    
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4
+    },
+    
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"
+    },
+    
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true
+    },
+    
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/build": true
+    },
+    
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+    },
+    
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#0a0a0a",
+        "activityBar.foreground": "#00ff00",
+        "statusBar.background": "#1a1a1a",
+        "statusBar.foreground": "#00ff00",
+        "titleBar.activeBackground": "#0a0a0a",
+        "titleBar.activeForeground": "#00ff00"
+    }
+}

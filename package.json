@@ -1,0 +1,29 @@
+{
+  "name": "pixel-guardians-earths-last-stand",
+  "version": "1.0.0",
+  "description": "A retro pixel art space defense game where you protect Earth from alien invasion",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000 || python3 -m http.server 8000",
+    "serve": "npx http-server -p 8000"
+  },
+  "keywords": [
+    "game",
+    "pixel-guardians",
+    "space-defense",
+    "mobile",
+    "retro",
+    "pixel-art",
+    "html5",
+    "canvas",
+    "earth-defense"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/pixel-guardians-earths-last-stand.git"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

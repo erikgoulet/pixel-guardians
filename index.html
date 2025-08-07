@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pixel Guardians: Earth's Last Stand</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-overlay">
+            <div id="score-display">SCORE: <span id="score">0</span></div>
+            <div id="high-score-display">HIGH: <span id="high-score">0</span></div>
+            <div id="wave-display">WAVE: <span id="wave">1</span></div>
+            <div id="lives-display">LIVES: <span id="lives">3</span></div>
+        </div>
+        <div id="start-screen" class="screen">
+            <h1>PIXEL GUARDIANS</h1>
+            <h2>Earth's Last Stand</h2>
+            <p>Drag to move • Tap to shoot</p>
+            <button id="start-button">START GAME</button>
+            <p style="margin-top: 20px; font-size: 14px; color: #00ffff;">Press M to toggle sound</p>
+        </div>
+        <div id="game-over-screen" class="screen hidden">
+            <h1>GAME OVER</h1>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <p>High Score: <span id="final-high-score">0</span></p>
+            <button id="restart-button">PLAY AGAIN</button>
+        </div>
+        <div id="pause-screen" class="screen hidden">
+            <h1>PAUSED</h1>
+            <button id="resume-button">RESUME</button>
+        </div>
+    </div>
+    
+    <!-- Core utilities first -->
+    <script src="js/core/utils.js"></script>
+    
+    <!-- Systems -->
+    <script src="js/systems/assets.js"></script>
+    <script src="js/systems/audio.js"></script>
+    
+    <!-- Entities -->
+    <script src="js/entities/entities.js"></script>
+    
+    <!-- Main game logic -->
+    <script src="js/core/game.js"></script>
+    
+    <!-- Entry point -->
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #0a0a1a;
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    background-color: #0a0a1a;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 20px #00ffff;
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+#ui-overlay {
+    display: none; /* UI is now drawn directly on canvas */
+}
+
+#ui-overlay > div {
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin: 5px;
+}
+
+#lives-display {
+    color: #ff7777;
+    font-weight: bold;
+    position: relative;
+}
+
+#lives-display::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #ff7777;
+    box-shadow: 0 0 10px #ff7777;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 10;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+.screen h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px #00ff00;
+    letter-spacing: 4px;
+}
+
+.screen h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px #00ff00;
+    letter-spacing: 2px;
+    color: #00cc00;
+}
+
+.screen p {
+    font-size: 18px;
+    margin-bottom: 30px;
+    text-align: center;
+    padding: 0 20px;
+}
+
+button {
+    background-color: transparent;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+}
+
+button:hover, button:active {
+    background-color: #00ff00;
+    color: #000;
+    box-shadow: 0 0 20px #00ff00;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    #ui-overlay > div {
+        font-size: 14px;
+    }
+    
+    .screen h1 {
+        font-size: 28px;
+    }
+    
+    .screen h2 {
+        font-size: 18px;
+    }
+    
+    .screen p {
+        font-size: 16px;
+    }
+    
+    button {
+        padding: 12px 24px;
+        font-size: 16px;
+    }
+}
+
+/* Scanline effect for retro feel */
+#gameCanvas::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 255, 0, 0.03),
+        rgba(0, 255, 0, 0.03) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+}
