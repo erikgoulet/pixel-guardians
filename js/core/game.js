@@ -292,8 +292,10 @@ class Game {
         // Scale controls based on screen size
         if (isMobile) {
             // Responsive control sizing
+            console.log('Canvas width:', this.canvas.width, 'Touchpad baseScale:', this.touchpad.baseScale);
             this.touchpad.width = Math.floor(this.canvas.width * this.touchpad.baseScale);
             this.touchpad.height = Math.floor(this.canvas.width * this.touchpad.baseScale);
+            console.log('New touchpad size:', this.touchpad.width, 'x', this.touchpad.height);
             
             this.shootButton.width = Math.floor(this.canvas.width * this.shootButton.baseScale);
             this.shootButton.height = Math.floor(this.canvas.width * this.shootButton.baseScale);

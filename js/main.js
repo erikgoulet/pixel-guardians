@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.game = game;
     
     // Log game version
-    console.log('Pixel Guardians: Earth\'s Last Stand v1.0.0');
+    console.log('Pixel Guardians: Earth\'s Last Stand v1.0.1');
+    console.log('Updated:', new Date().toISOString());
     console.log('Defend Earth! Controls: Drag to move, Tap to shoot');
 });
