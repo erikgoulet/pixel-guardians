@@ -36,6 +36,7 @@ class Game {
         this.touchCurrentX = 0;
         this.touchCurrentY = 0;
         this.isTouching = false;
+        this.movementTouchId = null; // Track which touch is for movement
         
         // Mobile shoot button - initialize before resizeCanvas
         this.shootButton = {
@@ -243,49 +244,52 @@ class Game {
             // Resume audio context on first touch (important for mobile)
             Audio.resume();
             
-            const touch = e.touches[0];
             const rect = this.canvas.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            
-            // Convert to canvas coordinates
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
-            const canvasX = x * scaleX;
-            const canvasY = y * scaleY;
             
-            // Check if shoot button is pressed (mobile only)
-            if ('ontouchstart' in window && this.state === 'playing') {
-                if (canvasX >= this.shootButton.x && 
-                    canvasX <= this.shootButton.x + this.shootButton.width &&
-                    canvasY >= this.shootButton.y && 
-                    canvasY <= this.shootButton.y + this.shootButton.height) {
-                    this.shootButton.pressed = true;
-                    this.input.shooting = true;
-                    return;
-                }
-            }
-            
-            // Left half for movement
-            if (x < this.canvas.width / 2) {
-                // Movement touch
-                this.touchStartX = canvasX;
-                this.touchStartY = canvasY;
-                this.touchCurrentX = this.touchStartX;
-                this.touchCurrentY = this.touchStartY;
-                this.isTouching = true;
-            } else {
-                if (this.state === 'playing') {
-                    // Double tap for dash (right side)
-                    const now = Date.now();
-                    if (this.lastTapTime && now - this.lastTapTime < 300) {
-                        this.input.dash = true;
+            // Handle all new touches
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                const canvasX = x * scaleX;
+                const canvasY = y * scaleY;
+                
+                // Check if shoot button is pressed (mobile only)
+                if ('ontouchstart' in window && this.state === 'playing') {
+                    if (canvasX >= this.shootButton.x && 
+                        canvasX <= this.shootButton.x + this.shootButton.width &&
+                        canvasY >= this.shootButton.y && 
+                        canvasY <= this.shootButton.y + this.shootButton.height) {
+                        this.shootButton.pressed = true;
+                        this.input.shooting = true;
+                        continue; // Process next touch
                     }
-                    this.lastTapTime = now;
-                } else if (this.state === 'gameover') {
-                    // Tap to restart
-                    if (this.gameOverAnimation && this.gameOverAnimation.buttonAlpha > 0.5) {
-                        this.startGame();
+                }
+                
+                // Left half for movement
+                if (x < this.canvas.width / 2 && this.movementTouchId === null) {
+                    // Movement touch
+                    this.movementTouchId = touch.identifier;
+                    this.touchStartX = canvasX;
+                    this.touchStartY = canvasY;
+                    this.touchCurrentX = this.touchStartX;
+                    this.touchCurrentY = this.touchStartY;
+                    this.isTouching = true;
+                } else if (x >= this.canvas.width / 2) {
+                    if (this.state === 'playing') {
+                        // Double tap for dash (right side)
+                        const now = Date.now();
+                        if (this.lastTapTime && now - this.lastTapTime < 300) {
+                            this.input.dash = true;
+                        }
+                        this.lastTapTime = now;
+                    } else if (this.state === 'gameover') {
+                        // Tap to restart
+                        if (this.gameOverAnimation && this.gameOverAnimation.buttonAlpha > 0.5) {
+                            this.startGame();
+                        }
                     }
                 }
             }
@@ -293,41 +297,51 @@ class Game {
         
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (this.isTouching && this.state === 'playing') {
-                const touch = e.touches[0];
-                const rect = this.canvas.getBoundingClientRect();
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-                this.touchCurrentX = x * scaleX;
-                this.touchCurrentY = y * scaleY;
+            if (this.isTouching && this.state === 'playing' && this.movementTouchId !== null) {
+                // Find the movement touch
+                let movementTouch = null;
+                for (let i = 0; i < e.touches.length; i++) {
+                    if (e.touches[i].identifier === this.movementTouchId) {
+                        movementTouch = e.touches[i];
+                        break;
+                    }
+                }
                 
-                // Calculate direction from initial touch point (virtual joystick)
-                const deltaX = this.touchCurrentX - this.touchStartX;
-                const deltaY = this.touchCurrentY - this.touchStartY;
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                
-                // Increased dead zone to 15 pixels for less sensitivity
-                const deadZone = 15;
-                const maxDist = 80; // Virtual joystick radius
-                
-                if (distance > deadZone) {
-                    // Calculate normalized direction with reduced sensitivity
-                    const effectiveDistance = distance - deadZone;
-                    const maxEffectiveDistance = maxDist - deadZone;
+                if (movementTouch) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = movementTouch.clientX - rect.left;
+                    const y = movementTouch.clientY - rect.top;
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    this.touchCurrentX = x * scaleX;
+                    this.touchCurrentY = y * scaleY;
                     
-                    // Apply cubic curve for smoother control (less sensitive near center)
-                    const normalizedDistance = Math.min(effectiveDistance / maxEffectiveDistance, 1);
-                    const curvedDistance = normalizedDistance * normalizedDistance * normalizedDistance;
+                    // Calculate direction from initial touch point (virtual joystick)
+                    const deltaX = this.touchCurrentX - this.touchStartX;
+                    const deltaY = this.touchCurrentY - this.touchStartY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                     
-                    // Apply direction with reduced sensitivity
-                    const sensitivity = 0.6; // Reduce overall sensitivity
-                    this.input.direction.x = (deltaX / distance) * curvedDistance * sensitivity;
-                    this.input.direction.y = (deltaY / distance) * curvedDistance * sensitivity;
-                } else {
-                    this.input.direction.x = 0;
-                    this.input.direction.y = 0;
+                    // Increased dead zone to 15 pixels for less sensitivity
+                    const deadZone = 15;
+                    const maxDist = 80; // Virtual joystick radius
+                    
+                    if (distance > deadZone) {
+                        // Calculate normalized direction with reduced sensitivity
+                        const effectiveDistance = distance - deadZone;
+                        const maxEffectiveDistance = maxDist - deadZone;
+                        
+                        // Apply cubic curve for smoother control (less sensitive near center)
+                        const normalizedDistance = Math.min(effectiveDistance / maxEffectiveDistance, 1);
+                        const curvedDistance = normalizedDistance * normalizedDistance * normalizedDistance;
+                        
+                        // Apply direction with reduced sensitivity
+                        const sensitivity = 0.6; // Reduce overall sensitivity
+                        this.input.direction.x = (deltaX / distance) * curvedDistance * sensitivity;
+                        this.input.direction.y = (deltaY / distance) * curvedDistance * sensitivity;
+                    } else {
+                        this.input.direction.x = 0;
+                        this.input.direction.y = 0;
+                    }
                 }
             }
         });
@@ -335,42 +349,50 @@ class Game {
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
             
-            // Check if shoot button was released
-            if (this.shootButton.pressed) {
-                let shootButtonStillPressed = false;
-                for (let touch of e.touches) {
-                    const rect = this.canvas.getBoundingClientRect();
-                    const x = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
-                    const y = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            
+            // Check each ended touch
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const x = (touch.clientX - rect.left) * scaleX;
+                const y = (touch.clientY - rect.top) * scaleY;
+                
+                // Check if the ended touch was on the shoot button
+                if (x >= this.shootButton.x && 
+                    x <= this.shootButton.x + this.shootButton.width &&
+                    y >= this.shootButton.y && 
+                    y <= this.shootButton.y + this.shootButton.height) {
+                    // Check if shoot button is still being pressed by another touch
+                    let shootButtonStillPressed = false;
+                    for (let j = 0; j < e.touches.length; j++) {
+                        const remainingTouch = e.touches[j];
+                        const remainingX = (remainingTouch.clientX - rect.left) * scaleX;
+                        const remainingY = (remainingTouch.clientY - rect.top) * scaleY;
+                        
+                        if (remainingX >= this.shootButton.x && 
+                            remainingX <= this.shootButton.x + this.shootButton.width &&
+                            remainingY >= this.shootButton.y && 
+                            remainingY <= this.shootButton.y + this.shootButton.height) {
+                            shootButtonStillPressed = true;
+                            break;
+                        }
+                    }
                     
-                    if (x >= this.shootButton.x && 
-                        x <= this.shootButton.x + this.shootButton.width &&
-                        y >= this.shootButton.y && 
-                        y <= this.shootButton.y + this.shootButton.height) {
-                        shootButtonStillPressed = true;
-                        break;
+                    if (!shootButtonStillPressed) {
+                        this.shootButton.pressed = false;
+                        this.input.shooting = false;
                     }
                 }
                 
-                if (!shootButtonStillPressed) {
-                    this.shootButton.pressed = false;
-                    this.input.shooting = false;
+                // Check if the ended touch was the movement touch
+                if (touch.identifier === this.movementTouchId) {
+                    this.isTouching = false;
+                    this.movementTouchId = null;
+                    this.input.direction.x = 0;
+                    this.input.direction.y = 0;
                 }
-            }
-            
-            // Check which touch ended for movement
-            let movementTouchEnded = true;
-            for (let touch of e.touches) {
-                const x = touch.clientX - this.canvas.getBoundingClientRect().left;
-                if (x < this.canvas.width / 2) {
-                    movementTouchEnded = false;
-                }
-            }
-            
-            if (movementTouchEnded) {
-                this.isTouching = false;
-                this.input.direction.x = 0;
-                this.input.direction.y = 0;
             }
         });
         
