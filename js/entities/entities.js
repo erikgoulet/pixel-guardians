@@ -232,7 +232,7 @@ class Player {
         }
         
         if (this.powerups.shield > 0) {
-            this.powerups.shield = 0;
+            // Shield absorbs the hit but doesn't break
             return false; // Shield absorbed the hit
         }
         return true; // Player takes damage
