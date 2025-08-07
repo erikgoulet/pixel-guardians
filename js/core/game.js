@@ -422,6 +422,9 @@ class Game {
         this.updateKeyboardInput = () => {
             if (this.state !== 'playing') return;
             
+            // Don't update keyboard input if touch is active
+            if (this.isTouching) return;
+            
             this.input.direction.x = 0;
             this.input.direction.y = 0;
             
