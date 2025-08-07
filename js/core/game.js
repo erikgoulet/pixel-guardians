@@ -81,8 +81,20 @@ class Game {
         
         // Setup UI buttons
         document.getElementById('start-button').addEventListener('click', () => {
-            Audio.resume();
-            this.startGame();
+            console.log('Start button clicked');
+            try {
+                // Ensure audio context exists before resuming
+                if (Audio.audioContext) {
+                    Audio.resume().then(() => {
+                        console.log('Audio resumed');
+                    }).catch(err => {
+                        console.error('Audio resume error:', err);
+                    });
+                }
+                this.startGame();
+            } catch (err) {
+                console.error('Error starting game:', err);
+            }
         });
         
         // Start menu soundtrack after a delay (desktop only - mobile needs user interaction)
@@ -496,6 +508,7 @@ class Game {
     }
 
     startGame() {
+        console.log('Starting game...');
         this.state = 'playing';
         this.wave = 1;
         this.score = 0;
@@ -505,11 +518,15 @@ class Game {
         this.gameOverAnimation = null;
         
         // Stop soundtrack when game starts
-        Audio.stopSoundtrack();
+        if (Audio && Audio.stopSoundtrack) {
+            Audio.stopSoundtrack();
+        }
         
         // Hide screens
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('game-over-screen').classList.add('hidden');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        if (startScreen) startScreen.classList.add('hidden');
+        if (gameOverScreen) gameOverScreen.classList.add('hidden');
         
         // Create player
         this.player = new Player(
