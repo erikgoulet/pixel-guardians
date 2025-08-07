@@ -59,7 +59,7 @@ class Game {
             width: 200, // Will be responsive
             height: 200, // Will be responsive
             visible: true,
-            baseScale: 0.15 // 15% of screen width
+            baseScale: 0.25 // 25% of screen width - increased for better control
         };
         
         // Mobile shoot button - initialize before resizeCanvas
@@ -305,7 +305,7 @@ class Game {
             this.handsButton.height = Math.floor(this.canvas.width * this.handsButton.baseScale);
             
             // Position controls based on handedness
-            const margin = 20;
+            const margin = 15; // Reduced margin for more space
             
             if (this.leftHanded) {
                 // Left-handed: touchpad on right, shoot button on left

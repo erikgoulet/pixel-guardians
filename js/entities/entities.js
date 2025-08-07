@@ -23,9 +23,9 @@ class Player {
         // Movement physics
         this.vx = 0;
         this.vy = 0;
-        this.acceleration = 1600; // Increased for more responsive control
-        this.friction = 0.88; // Balanced friction for responsive but smooth movement
-        this.maxSpeed = 400; // Increased for better touchpad tracking
+        this.acceleration = 2400; // Further increased for mobile responsiveness
+        this.friction = 0.85; // Slightly less friction for smoother movement
+        this.maxSpeed = 500; // Increased max speed for better coverage
         
         // Movement constraints (will be updated in setCanvas)
         this.minY = 400; // Default, updated when canvas is set
@@ -278,21 +278,22 @@ class Player {
         const dy = targetY - (this.y + this.height / 2);
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance > 5) {
-            // Strong acceleration towards target for responsive control
-            const force = Math.min(distance / 50, 1) * 2; // Scale force by distance
-            this.vx += (dx / distance) * this.acceleration * force * 0.016;
-            this.vy += (dy / distance) * this.acceleration * force * 0.016;
+        if (distance > 3) {
+            // More aggressive movement for mobile
+            // Direct velocity setting for immediate response
+            const speed = Math.min(distance * 8, this.maxSpeed);
+            this.vx = (dx / distance) * speed;
+            this.vy = (dy / distance) * speed;
             
-            // Apply stronger friction when close to target
-            if (distance < 30) {
-                this.vx *= 0.8;
-                this.vy *= 0.8;
+            // Only apply friction when very close
+            if (distance < 15) {
+                this.vx *= 0.7;
+                this.vy *= 0.7;
             }
         } else {
             // Stop when very close
-            this.vx *= 0.7;
-            this.vy *= 0.7;
+            this.vx *= 0.5;
+            this.vy *= 0.5;
         }
         
         // Clamp velocity
