@@ -166,11 +166,9 @@ const Audio = {
         console.log('Starting soundtrack...', { enabled: this.enabled, context: !!this.audioContext, isPlaying: this.soundtrack.isPlaying });
         if (!this.enabled || !this.audioContext) return;
         
-        // Stop any existing soundtrack first to prevent doubling
+        // If already playing, don't restart
         if (this.soundtrack.isPlaying) {
-            this.stopSoundtrack();
-            // Small delay to ensure cleanup is complete
-            setTimeout(() => this._startSoundtrackInternal(), 100);
+            console.log('Soundtrack already playing, skipping');
             return;
         }
         
@@ -224,35 +222,38 @@ const Audio = {
         
         this.soundtrack.isPlaying = false;
         
-        // Clear interval
+        // Clear interval immediately
         if (this.soundtrack.noteInterval) {
             clearInterval(this.soundtrack.noteInterval);
             this.soundtrack.noteInterval = null;
         }
         
-        // Fade out and stop all oscillators
+        // Immediately disconnect and cleanup
         if (this.soundtrack.gainNode) {
-            this.soundtrack.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 1);
-            
-            setTimeout(() => {
-                this.soundtrack.oscillators.forEach(osc => {
-                    try {
-                        osc.stop();
-                        osc.disconnect();
-                    } catch (e) {}
-                });
-                this.soundtrack.oscillators = [];
-                
-                if (this.soundtrack.gainNode) {
-                    this.soundtrack.gainNode.disconnect();
-                    this.soundtrack.gainNode = null;
-                }
-                if (this.soundtrack.filterNode) {
-                    this.soundtrack.filterNode.disconnect();
-                    this.soundtrack.filterNode = null;
-                }
-            }, 1100);
+            try {
+                this.soundtrack.gainNode.disconnect();
+            } catch (e) {}
+            this.soundtrack.gainNode = null;
         }
+        
+        if (this.soundtrack.filterNode) {
+            try {
+                this.soundtrack.filterNode.disconnect();
+            } catch (e) {}
+            this.soundtrack.filterNode = null;
+        }
+        
+        // Stop any remaining oscillators
+        this.soundtrack.oscillators.forEach(osc => {
+            try {
+                osc.stop();
+                osc.disconnect();
+            } catch (e) {}
+        });
+        this.soundtrack.oscillators = [];
+        
+        // Reset note index
+        this.soundtrack.currentNoteIndex = 0;
     },
     
     // Play next note in arpeggio
