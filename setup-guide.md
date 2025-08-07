@@ -97,4 +97,4 @@ pixel-guardians/
 - Reduce particle effects in `utils.js`
 - Lower enemy count in `game.js`
 
-Happy defending! 🌍🛸
+Happy defending!

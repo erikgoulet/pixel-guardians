@@ -179,7 +179,7 @@ isDashing: true = invulnerable
 ## Git Commit Guidelines
 
 When committing and pushing to Git, do NOT include the following in commit messages:
-- 🤖 Generated with [Claude Code](https://claude.ai/code)
+- Generated with [Claude Code](https://claude.ai/code)
 - Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### Quick Git Command: QGIT

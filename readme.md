@@ -9,24 +9,24 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 ## Core Features
 
 ### Gameplay Innovation
-- 🚀 **Full 8-directional movement** - Move freely in the bottom 50% of the screen
-- ⚡ **Dash ability** - Quick evasion with brief invincibility (double-tap or Shift/X)
-- 🧠 **Dynamic enemy AI** - Enemies use swarm behavior with flocking, attacking, and flanking patterns
-- 🎯 **Multiple formation types** - Face swarms, V-formations, circles, and flanking maneuvers
+- **Full 8-directional movement** - Move freely in the bottom 50% of the screen
+- **Dash ability** - Quick evasion with brief invincibility (double-tap or Shift/X)
+- **Dynamic enemy AI** - Enemies use swarm behavior with flocking, attacking, and flanking patterns
+- **Multiple formation types** - Face swarms, V-formations, circles, and flanking maneuvers
 
 ### Visual & Audio
-- 🎨 **Unique cyberpunk aesthetic** - Neon colors, glowing effects, custom pixel art
-- 🎵 **Atmospheric soundtrack** - Dorian mode arpeggiator on menu/game over screens
-- 💥 **Advanced particle effects** - Ship disintegration, engine trails, shockwaves
-- 📳 **Screen shake** - Dynamic camera effects for impacts
+- **Unique cyberpunk aesthetic** - Neon colors, glowing effects, custom pixel art
+- **Atmospheric soundtrack** - Dorian mode arpeggiator on menu/game over screens
+- **Advanced particle effects** - Ship disintegration, engine trails, shockwaves
+- **Screen shake** - Dynamic camera effects for impacts
 
 ### Game Systems
-- 👾 **4 enemy types** with varying health, behavior, and point values
-- 💪 **Boss battles** every 3 waves with multiple attack patterns
-- ⚡ **Power-up system** - Triple Shot, Rapid Fire, Shield (20% drop rate)
-- 🎁 **Extra life system** - Bonus ship at 10K points, then every 20K
-- 📱 **Mobile-first controls** - Virtual joystick for movement, tap to shoot
-- 💾 **Persistent high scores** stored locally
+- **4 enemy types** with varying health, behavior, and point values
+- **Boss battles** every 3 waves with multiple attack patterns
+- **Power-up system** - Triple Shot, Rapid Fire, Shield (20% drop rate)
+- **Extra life system** - Bonus ship at 10K points, then every 20K
+- **Mobile-first controls** - Virtual joystick for movement, tap to shoot
+- **Persistent high scores** stored locally
 
 ## How to Play
 
@@ -54,9 +54,9 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
    - V-formations dive systematically
    - Flanking groups attack from sides
 4. **Power-ups**: Destroy enemies for chance at upgrades
-   - 🔵 Triple Shot (10 seconds)
-   - 🟡 Rapid Fire (10 seconds)  
-   - 🟢 Shield (15 seconds, absorbs one hit)
+   - Triple Shot (10 seconds)
+   - Rapid Fire (10 seconds)  
+   - Shield (15 seconds, absorbs one hit)
 5. **Extra Lives**: Earn bonus ships at score milestones
 
 ## Enemy Types & Formations
@@ -129,11 +129,11 @@ pixel-guardians/
 
 ### Browser Compatibility
 
-- ✅ Chrome/Edge (recommended)
-- ✅ Firefox
-- ✅ Safari
-- ✅ Mobile browsers with touch support
-- ✅ Web Audio API support required for sound
+- Chrome/Edge (recommended)
+- Firefox
+- Safari
+- Mobile browsers with touch support
+- Web Audio API support required for sound
 
 ## Customization Guide
 
