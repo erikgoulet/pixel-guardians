@@ -75,6 +75,10 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 
 ## Quick Start
 
+### Play Online
+Play the game directly in your browser: **[https://erikgoulet.github.io/pixel-guardians/](https://erikgoulet.github.io/pixel-guardians/)**
+
+### Run Locally
 1. Clone or download this repository
 2. Open `index.html` in a modern web browser
 3. Click "START GAME" or press Space
