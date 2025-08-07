@@ -96,10 +96,11 @@ Total drop rate: 20% per enemy destroyed
 ## Controls
 
 ### Mobile (Primary)
-- **Move**: Left side virtual joystick (8-directional)
-- **Shoot**: Right side tap (continuous)
-- **Dash**: Double-tap right side
-- **Sound**: M key (keyboard only currently)
+- **Move**: Large touchpad control area (35% screen width) with direct position mapping
+- **Shoot**: Circular shoot button with press animation
+- **Dash**: Swipe gesture in any direction to dash that way
+- **Handedness**: Toggle between left/right-handed layouts
+- **Sound**: Audio toggle button in UI
 
 ### Desktop
 - **Move**: WASD/Arrow keys (8-directional)

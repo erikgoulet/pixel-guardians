@@ -10,9 +10,10 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 
 ### Gameplay Innovation
 - **Full 8-directional movement** - Move freely in the bottom 50% of the screen
-- **Dash ability** - Quick evasion with brief invincibility (double-tap or Shift/X)
-- **Dynamic enemy AI** - Enemies use swarm behavior with flocking, attacking, and flanking patterns
+- **Dash ability** - 0.2s invincibility with 0.5s cooldown (swipe gesture or Shift/X)
+- **Advanced swarm AI** - Three flocking behaviors: separation, alignment, and cohesion
 - **Multiple formation types** - Face swarms, V-formations, circles, and flanking maneuvers
+- **Direct touch control** - Responsive touchpad control area for precise movement
 
 ### Visual & Audio
 - **Unique cyberpunk aesthetic** - Neon colors, glowing effects, custom pixel art
@@ -21,11 +22,11 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 - **Screen shake** - Dynamic camera effects for impacts
 
 ### Game Systems
-- **4 enemy types** with varying health, behavior, and point values
-- **Boss battles** every 3 waves with multiple attack patterns
-- **Power-up system** - Triple Shot, Rapid Fire, Shield (20% drop rate)
-- **Extra life system** - Bonus ship at 10K points, then every 20K
-- **Mobile-first controls** - Virtual joystick for movement, tap to shoot
+- **4 enemy types** with varying health (1-4 HP), behavior, and point values (10-40)
+- **Boss battles** every 3 waves with 3 attack patterns and 20+ health
+- **Power-up system** - Triple Shot (10s), Rapid Fire (10s), Shield (15s) at 20% drop rate
+- **Extra life system** - First at 10K points, then every 20K (max 5 lives)
+- **Mobile-optimized controls** - Direct touch mapping with handedness toggle
 - **Persistent high scores** stored locally
 
 ## How to Play
@@ -33,9 +34,10 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 ### Controls
 
 **Mobile:**
-- **Left side of screen**: Virtual joystick for 8-directional movement
-- **Right side of screen**: Tap to shoot continuously
-- **Double-tap right side**: Activate dash ability
+- **Large touchpad area** (35% screen width): Direct position mapping for movement
+- **Shoot button**: Circular button for continuous firing
+- **Swipe gesture**: Swipe in any direction to dash that way
+- **Handedness toggle**: Switch between left/right-handed layouts
 
 **Desktop:**
 - **WASD/Arrow keys**: 8-directional movement
@@ -47,17 +49,17 @@ Pixel Guardians transforms the traditional space shooter into a dynamic combat e
 
 ### Advanced Mechanics
 
-1. **Movement**: Your ship can move freely within the bottom 50% of the screen
-2. **Dash**: Quick burst of speed with 0.2s invincibility (0.5s cooldown)
-3. **Enemy Patterns**: Learn different formation behaviors:
-   - Swarms converge on your position
-   - V-formations dive systematically
-   - Flanking groups attack from sides
-4. **Power-ups**: Destroy enemies for chance at upgrades
-   - Triple Shot (10 seconds)
-   - Rapid Fire (10 seconds)  
-   - Shield (15 seconds, absorbs one hit)
-5. **Extra Lives**: Earn bonus ships at score milestones
+1. **Movement**: Physics-based movement with acceleration (2400) and friction (0.85)
+2. **Dash**: 800 speed burst with 0.2s invincibility frames (0.5s cooldown)
+3. **Swarm AI Behaviors**: Enemies use three flocking rules:
+   - Separation: Avoid crowding (30px radius)
+   - Alignment: Match neighbor velocity (60px radius)
+   - Cohesion: Move toward group center (80px radius)
+4. **Power-ups**: 20% drop rate from destroyed enemies
+   - Triple Shot (10s duration, fires 3 bullets)
+   - Rapid Fire (10s, 0.1s vs 0.3s cooldown)
+   - Shield (15s, absorbs multiple hits)
+5. **Extra Lives**: 1UP at 10K, then every 20K points (maximum 5 lives)
 
 ## Enemy Types & Formations
 
@@ -117,11 +119,12 @@ pixel-guardians/
 
 ### Architecture Highlights
 
-- **Entity System**: Object-oriented design with base classes for game entities
-- **Particle System**: Dynamic effects with physics simulation
-- **Audio Synthesis**: Real-time sound generation including musical soundtrack
-- **State Management**: Clean separation of game states (menu, playing, paused, gameover)
-- **Delta Time**: Frame-independent movement and animations
+- **Entity System**: Object-oriented classes for Player, Enemy, Bullet, PowerUp, Boss
+- **Enhanced Particle System**: Physics-based effects with gravity and shockwaves
+- **Web Audio API**: Synthesized sounds and Dorian mode soundtrack (D-F-A-B-A-F)
+- **Canvas-based UI**: Overlay system for game over screens and controls
+- **State Management**: Clean separation between menu, playing, paused, gameover states
+- **Mobile-first Design**: Touch-optimized with responsive sizing and gestures
 
 ### Performance Features
 
@@ -172,11 +175,12 @@ Modify in `js/core/game.js`:
 
 | Action | Mobile | Keyboard | Mouse |
 |--------|--------|----------|--------|
-| Move | Drag left side | WASD/Arrows | Move cursor |
-| Shoot | Tap right side | Space | Click |
-| Dash | Double-tap | Shift/X | Double-click |
-| Pause | - | ESC | - |
-| Toggle Sound | - | M | - |
+| Move | Touch touchpad | WASD/Arrows | - |
+| Shoot | Tap shoot button | Space | Click |
+| Dash | Swipe gesture | Shift/X | - |
+| Pause | Menu button | ESC | - |
+| Toggle Sound | Audio button | M | - |
+| Handedness | Settings toggle | - | - |
 
 ## Tips & Strategy
 

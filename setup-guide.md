@@ -65,14 +65,17 @@ pixel-guardians/
 
 ## Testing
 
-### Desktop
-- Open in Chrome/Firefox/Safari
-- Use mouse or keyboard controls
+### Desktop Testing
+- **Chrome/Edge**: Recommended browsers with full Web Audio API support
+- **Keyboard Controls**: WASD/Arrow keys, Space to shoot, Shift/X to dash
+- **Audio Testing**: Press M to toggle sound, T to test audio system
 
-### Mobile
-1. Start Live Server
+### Mobile Testing
+1. Start local server with `npm start`
 2. Find your computer's IP address
-3. On your phone, visit: `http://YOUR_IP:5501`
+3. On mobile device, visit: `http://YOUR_IP:8000`
+4. Test touchpad controls and swipe gestures
+5. Verify handedness toggle works correctly
 
 ## Deployment
 

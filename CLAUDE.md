@@ -11,9 +11,9 @@ Pixel Guardians: Earth's Last Stand is a unique cyberpunk space defense game tha
 ### Gameplay Mechanics
 - **8-directional movement** within bottom 50% of screen
 - **Dash ability** with 0.2s invincibility (0.5s cooldown)
-- **Swarm AI** using flocking behavior (separation, alignment, cohesion)
-- **Multiple formation types**: swarm, V-formation, circle, flanking
-- **Virtual joystick** for mobile controls
+- **Advanced swarm AI** using flocking behavior (separation, alignment, cohesion)
+- **Multiple formation types**: swarm, V-formation, circle, flanking (cycle every 2 waves)
+- **Direct touch controls** for mobile with handedness toggle and swipe-to-dash
 
 ### Visual Systems
 - **Cyberpunk aesthetic** with neon colors (cyan player, multicolor enemies)
@@ -93,9 +93,9 @@ npm run serve
 ```javascript
 // Player has velocity-based movement with friction
 vx/vy: velocity components
-acceleration: 1200
+acceleration: 2400  // Increased for mobile responsiveness
 friction: 0.85
-maxSpeed: 350
+maxSpeed: 500       // Increased for better coverage
 minY: canvas.height * 0.5 (50% boundary)
 ```
 
@@ -116,11 +116,23 @@ dashCooldown: 0.5
 isDashing: true = invulnerable
 ```
 
-#### Formation Types
-- **Wave 1**: Swarm (random positions, flocking)
-- **Wave 2**: V-Formation (triangular pattern)
-- **Wave 4**: Circle (surrounding pattern)
-- **Wave 5**: Flanking (two side groups)
+#### Formation Types (Cycle Every 2 Waves)
+- **Waves 1-2**: Swarm (random positions, flocking)
+- **Waves 3-4**: V-Formation (triangular pattern)
+- **Waves 5-6**: Circle (surrounding pattern)
+- **Waves 7-8**: Flanking (two side groups)
+- **Then repeats**: Pattern continues with increased difficulty
+
+#### Mobile Control System
+```javascript
+// Direct touch control (default)
+useDirectTouch: true
+touchpadArea: 35% screen width
+movementMapping: direct position to player coordinates
+handednessToggle: left/right control layouts
+swipeToDash: gesture in any direction triggers dash
+shootButton: circular button with press animation
+```
 
 ## Common Development Tasks
 
