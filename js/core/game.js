@@ -39,6 +39,15 @@ class Game {
         this.movementTouchId = null; // Track which touch is for movement
         this.useDirectTouch = true; // Use direct touch control instead of virtual joystick
         
+        // Touchpad area for movement (bottom left)
+        this.touchpad = {
+            x: 20,
+            y: 0, // Will be set based on canvas height
+            width: 200,
+            height: 200,
+            visible: true
+        };
+        
         // Mobile shoot button - initialize before resizeCanvas
         this.shootButton = {
             x: 0,
@@ -235,6 +244,9 @@ class Game {
         // Position shoot button (bottom right corner for mobile)
         this.shootButton.x = this.canvas.width - this.shootButton.width - 20;
         this.shootButton.y = this.canvas.height - this.shootButton.height - 20;
+        
+        // Position touchpad (bottom left corner)
+        this.touchpad.y = this.canvas.height - this.touchpad.height - 20;
     }
 
     setupControls() {
@@ -269,9 +281,13 @@ class Game {
                     }
                 }
                 
-                // Left half for movement
-                if (x < this.canvas.width / 2 && this.movementTouchId === null) {
-                    // Movement touch
+                // Check if touch is within touchpad area
+                if (canvasX >= this.touchpad.x && 
+                    canvasX <= this.touchpad.x + this.touchpad.width &&
+                    canvasY >= this.touchpad.y && 
+                    canvasY <= this.touchpad.y + this.touchpad.height &&
+                    this.movementTouchId === null) {
+                    // Movement touch within touchpad
                     this.movementTouchId = touch.identifier;
                     this.touchStartX = canvasX;
                     this.touchStartY = canvasY;
@@ -279,14 +295,18 @@ class Game {
                     this.touchCurrentY = this.touchStartY;
                     this.isTouching = true;
                     
-                    // For direct touch, immediately set target position
+                    // For direct touch, map touchpad position to ship position
                     if (this.useDirectTouch && this.player && this.state === 'playing') {
-                        let targetX = canvasX - this.player.width / 2;
-                        let targetY = canvasY - this.player.height / 2;
+                        // Map touchpad coordinates to playable area
+                        const touchpadRelX = (canvasX - this.touchpad.x) / this.touchpad.width;
+                        const touchpadRelY = (canvasY - this.touchpad.y) / this.touchpad.height;
                         
-                        // Constrain to playable area
-                        targetX = Math.max(0, Math.min(this.canvas.width - this.player.width, targetX));
-                        targetY = Math.max(this.canvas.height * 0.5, Math.min(this.canvas.height - this.player.height - 20, targetY));
+                        // Map to playable area
+                        const playableMinY = this.canvas.height * 0.5;
+                        const playableMaxY = this.canvas.height - this.player.height - 20;
+                        
+                        let targetX = touchpadRelX * (this.canvas.width - this.player.width);
+                        let targetY = playableMinY + touchpadRelY * (playableMaxY - playableMinY);
                         
                         this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
                     }
@@ -329,20 +349,30 @@ class Game {
                     this.touchCurrentX = x * scaleX;
                     this.touchCurrentY = y * scaleY;
                     
-                    if (this.useDirectTouch) {
-                        // Direct touch control - ship follows finger
-                        if (this.player) {
-                            // Clamp target position within player bounds
-                            let targetX = this.touchCurrentX - this.player.width / 2;
-                            let targetY = this.touchCurrentY - this.player.height / 2;
-                            
-                            // Constrain to playable area
-                            targetX = Math.max(0, Math.min(this.canvas.width - this.player.width, targetX));
-                            targetY = Math.max(this.canvas.height * 0.5, Math.min(this.canvas.height - this.player.height - 20, targetY));
-                            
-                            this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
-                        }
-                    } else {
+                    // Check if touch is still within touchpad bounds
+                    const withinTouchpad = this.touchCurrentX >= this.touchpad.x && 
+                                         this.touchCurrentX <= this.touchpad.x + this.touchpad.width &&
+                                         this.touchCurrentY >= this.touchpad.y && 
+                                         this.touchCurrentY <= this.touchpad.y + this.touchpad.height;
+                    
+                    if (withinTouchpad) {
+                        if (this.useDirectTouch) {
+                            // Direct touch control - map touchpad to playable area
+                            if (this.player) {
+                                // Map touchpad coordinates to playable area
+                                const touchpadRelX = (this.touchCurrentX - this.touchpad.x) / this.touchpad.width;
+                                const touchpadRelY = (this.touchCurrentY - this.touchpad.y) / this.touchpad.height;
+                                
+                                // Map to playable area
+                                const playableMinY = this.canvas.height * 0.5;
+                                const playableMaxY = this.canvas.height - this.player.height - 20;
+                                
+                                let targetX = touchpadRelX * (this.canvas.width - this.player.width);
+                                let targetY = playableMinY + touchpadRelY * (playableMaxY - playableMinY);
+                                
+                                this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
+                            }
+                        } else {
                         // Virtual joystick control
                         const deltaX = this.touchCurrentX - this.touchStartX;
                         const deltaY = this.touchCurrentY - this.touchStartY;
@@ -363,6 +393,11 @@ class Game {
                             this.input.direction.x = 0;
                             this.input.direction.y = 0;
                         }
+                        }
+                    } else {
+                        // Touch moved outside touchpad - stop movement
+                        this.input.direction.x = 0;
+                        this.input.direction.y = 0;
                     }
                 }
             }
@@ -1136,24 +1171,52 @@ class Game {
         // Draw touch controls feedback
         if (this.isTouching && this.state === 'playing') {
             if (this.useDirectTouch) {
-                // Draw touch indicator for direct control
-                this.ctx.save();
-                this.ctx.globalAlpha = 0.3;
+                // Draw touch indicator for direct control (only within touchpad)
+                const withinTouchpad = this.touchCurrentX >= this.touchpad.x && 
+                                     this.touchCurrentX <= this.touchpad.x + this.touchpad.width &&
+                                     this.touchCurrentY >= this.touchpad.y && 
+                                     this.touchCurrentY <= this.touchpad.y + this.touchpad.height;
                 
-                // Draw touch point
-                this.ctx.strokeStyle = Assets.colors.primary;
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 15, 0, Math.PI * 2);
-                this.ctx.stroke();
-                
-                // Draw inner dot
-                this.ctx.fillStyle = Assets.colors.primary;
-                this.ctx.beginPath();
-                this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 3, 0, Math.PI * 2);
-                this.ctx.fill();
-                
-                this.ctx.restore();
+                if (withinTouchpad) {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.5;
+                    
+                    // Draw touch point
+                    this.ctx.strokeStyle = Assets.colors.primary;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 15, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Draw inner dot
+                    this.ctx.fillStyle = Assets.colors.primary;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Draw ship position indicator on touchpad
+                    const touchpadRelX = (this.touchCurrentX - this.touchpad.x) / this.touchpad.width;
+                    const touchpadRelY = (this.touchCurrentY - this.touchpad.y) / this.touchpad.height;
+                    
+                    // Show where this maps to on screen with a small ship icon
+                    if (this.player) {
+                        const indicatorX = this.touchpad.x + touchpadRelX * this.touchpad.width;
+                        const indicatorY = this.touchpad.y + touchpadRelY * this.touchpad.height;
+                        
+                        // Draw mini ship indicator
+                        this.ctx.globalAlpha = 0.7;
+                        Assets.drawSprite(
+                            this.ctx, 
+                            Assets.sprites.player, 
+                            indicatorX - 6, 
+                            indicatorY - 6, 
+                            1, 
+                            Assets.colors.primary
+                        );
+                    }
+                    
+                    this.ctx.restore();
+                }
             } else {
                 // Virtual joystick for non-direct control
             // Draw virtual joystick background
@@ -1197,6 +1260,46 @@ class Game {
         
         // Draw mobile controls
         if (this.state === 'playing' && 'ontouchstart' in window) {
+            // Draw touchpad area
+            if (this.touchpad.visible) {
+                this.ctx.save();
+                
+                // Draw touchpad background
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                this.ctx.fillRect(this.touchpad.x, this.touchpad.y, this.touchpad.width, this.touchpad.height);
+                
+                // Draw touchpad border
+                this.ctx.strokeStyle = this.isTouching ? Assets.colors.primary : 'rgba(255, 255, 255, 0.3)';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(this.touchpad.x, this.touchpad.y, this.touchpad.width, this.touchpad.height);
+                
+                // Draw grid lines for reference
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                this.ctx.lineWidth = 1;
+                
+                // Vertical center line
+                const centerX = this.touchpad.x + this.touchpad.width / 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX, this.touchpad.y);
+                this.ctx.lineTo(centerX, this.touchpad.y + this.touchpad.height);
+                this.ctx.stroke();
+                
+                // Horizontal center line
+                const centerY = this.touchpad.y + this.touchpad.height / 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.touchpad.x, centerY);
+                this.ctx.lineTo(this.touchpad.x + this.touchpad.width, centerY);
+                this.ctx.stroke();
+                
+                // Label
+                this.ctx.font = '12px monospace';
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('MOVE', centerX, this.touchpad.y - 5);
+                
+                this.ctx.restore();
+            }
+            
             // Draw shoot button
             this.ctx.save();
             
@@ -1235,23 +1338,6 @@ class Game {
             
             this.ctx.restore();
             
-            // Draw touch zone hints when not touching
-            if (!this.isTouching && !this.shootButton.pressed) {
-                this.ctx.globalAlpha = 0.1;
-                
-                // Left side movement zone
-                this.ctx.fillStyle = Assets.colors.primary;
-                this.ctx.fillRect(0, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
-                
-                // Zone labels
-                this.ctx.globalAlpha = 0.3;
-                this.ctx.font = '16px monospace';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillStyle = Assets.colors.primary;
-                this.ctx.fillText('MOVE', this.canvas.width * 0.25, this.canvas.height * 0.75);
-                
-                this.ctx.globalAlpha = 1;
-            }
         }
         
         // Draw dash cooldown indicator
