@@ -290,7 +290,6 @@ class Game {
         this.canvas.style.transform = 'translate(-50%, -50%)';
         
         // Scale controls based on screen size
-        const isMobile = 'ontouchstart' in window;
         if (isMobile) {
             // Responsive control sizing
             this.touchpad.width = Math.floor(this.canvas.width * this.touchpad.baseScale);
