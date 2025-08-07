@@ -76,30 +76,44 @@ class Game {
             this.startGame();
         });
         
-        // Start menu soundtrack after a delay
+        // Start menu soundtrack after a delay (desktop only - mobile needs user interaction)
         setTimeout(() => {
-            if (this.state === 'menu') {
+            if (this.state === 'menu' && Audio.audioContext && Audio.audioContext.state === 'running') {
                 Audio.startSoundtrack();
             }
         }, 1000);
         
         // Also try to start soundtrack on first user interaction
         const startSoundtrackOnce = () => {
-            if (this.state === 'menu' && Audio.enabled) {
-                Audio.resume();
-                // Small delay to ensure context is fully resumed
-                setTimeout(() => {
-                    Audio.startSoundtrack();
-                }, 50);
+            if (this.state === 'menu' && Audio.enabled && Audio.audioContext) {
+                console.log('User interaction detected, attempting to start soundtrack');
+                Audio.resume().then(() => {
+                    // Wait a moment for context to be fully ready
+                    setTimeout(() => {
+                        if (this.state === 'menu' && Audio.enabled && !Audio.soundtrack.isPlaying) {
+                            console.log('Starting soundtrack after user interaction');
+                            Audio.startSoundtrack();
+                        }
+                    }, 100);
+                }).catch(e => {
+                    console.log('Audio resume failed:', e);
+                });
             }
             document.removeEventListener('click', startSoundtrackOnce);
             document.removeEventListener('touchstart', startSoundtrackOnce);
             document.removeEventListener('keydown', startSoundtrackOnce);
+            document.removeEventListener('touchend', startSoundtrackOnce);
+            this.canvas.removeEventListener('touchstart', startSoundtrackOnce);
+            this.canvas.removeEventListener('touchend', startSoundtrackOnce);
         };
         
         document.addEventListener('click', startSoundtrackOnce);
         document.addEventListener('touchstart', startSoundtrackOnce);
         document.addEventListener('keydown', startSoundtrackOnce);
+        // Additional mobile events
+        document.addEventListener('touchend', startSoundtrackOnce);
+        this.canvas.addEventListener('touchstart', startSoundtrackOnce);
+        this.canvas.addEventListener('touchend', startSoundtrackOnce);
         
         document.getElementById('restart-button').addEventListener('click', () => {
             this.startGame();

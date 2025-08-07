@@ -135,8 +135,10 @@ const Audio = {
     // Resume audio context (needed for mobile)
     resume() {
         if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+            console.log('Resuming suspended audio context');
+            return this.audioContext.resume();
         }
+        return Promise.resolve();
     },
     
     // Test soundtrack with a simple note
