@@ -57,6 +57,7 @@ class Game {
         this.highScoreElement = document.getElementById('high-score');
         this.waveElement = document.getElementById('wave');
         this.livesElement = document.getElementById('lives');
+        this.muteButton = document.getElementById('mute-button');
         
         // Initialize
         this.init();
@@ -104,6 +105,33 @@ class Game {
         document.getElementById('resume-button').addEventListener('click', () => {
             this.resumeGame();
         });
+        
+        // Setup mute button
+        this.muteButton.addEventListener('click', () => {
+            const wasEnabled = Audio.enabled;
+            Audio.toggle();
+            
+            // Update button state
+            if (Audio.enabled) {
+                this.muteButton.classList.remove('muted');
+            } else {
+                this.muteButton.classList.add('muted');
+            }
+            
+            // Handle soundtrack based on game state
+            if (this.state === 'menu' || this.state === 'gameover') {
+                if (Audio.enabled && !wasEnabled) {
+                    Audio.startSoundtrack();
+                } else if (!Audio.enabled && wasEnabled) {
+                    Audio.stopSoundtrack();
+                }
+            }
+        });
+        
+        // Set initial mute button state
+        if (!Audio.enabled) {
+            this.muteButton.classList.add('muted');
+        }
         
         // Update high score display
         this.highScoreElement.textContent = Utils.formatScore(this.highScore);

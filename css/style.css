@@ -162,3 +162,53 @@ button:hover, button:active {
     );
     pointer-events: none;
 }
+
+/* Mute button styles */
+.mute-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    color: #00ffff;
+    cursor: pointer;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    transition: all 0.3s;
+    padding: 0;
+}
+
+.mute-button:hover {
+    background-color: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 20px #00ffff;
+}
+
+.mute-button .sound-on,
+.mute-button .sound-off {
+    position: absolute;
+    transition: opacity 0.3s;
+}
+
+.mute-button.muted .sound-on {
+    opacity: 0;
+}
+
+.mute-button:not(.muted) .sound-off {
+    opacity: 0;
+}
+
+@media (max-width: 480px) {
+    .mute-button {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        top: 15px;
+        right: 15px;
+    }
+}
