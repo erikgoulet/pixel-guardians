@@ -23,9 +23,9 @@ class Player {
         // Movement physics
         this.vx = 0;
         this.vy = 0;
-        this.acceleration = 1200;
-        this.friction = 0.85;
-        this.maxSpeed = 350;
+        this.acceleration = 800; // Reduced from 1200 for better mobile control
+        this.friction = 0.92; // Increased from 0.85 for less sliding
+        this.maxSpeed = 300; // Reduced from 350 for easier control
         
         // Movement constraints (will be updated in setCanvas)
         this.minY = 400; // Default, updated when canvas is set

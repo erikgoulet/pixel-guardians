@@ -41,6 +41,15 @@ class Game {
         this.touchCurrentY = 0;
         this.isTouching = false;
         
+        // Mobile shoot button
+        this.shootButton = {
+            x: 0,
+            y: 0,
+            width: 80,
+            height: 80,
+            pressed: false
+        };
+        
         // Input state
         this.input = {
             direction: { x: 0, y: 0 },
@@ -208,6 +217,10 @@ class Game {
         this.canvas.style.left = '50%';
         this.canvas.style.top = '50%';
         this.canvas.style.transform = 'translate(-50%, -50%)';
+        
+        // Position shoot button (bottom right corner for mobile)
+        this.shootButton.x = this.canvas.width - this.shootButton.width - 20;
+        this.shootButton.y = this.canvas.height - this.shootButton.height - 20;
     }
 
     setupControls() {
@@ -223,22 +236,35 @@ class Game {
             const x = touch.clientX - rect.left;
             const y = touch.clientY - rect.top;
             
-            // Left half for movement, right half for shooting/actions
+            // Convert to canvas coordinates
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            const canvasX = x * scaleX;
+            const canvasY = y * scaleY;
+            
+            // Check if shoot button is pressed (mobile only)
+            if ('ontouchstart' in window && this.state === 'playing') {
+                if (canvasX >= this.shootButton.x && 
+                    canvasX <= this.shootButton.x + this.shootButton.width &&
+                    canvasY >= this.shootButton.y && 
+                    canvasY <= this.shootButton.y + this.shootButton.height) {
+                    this.shootButton.pressed = true;
+                    this.input.shooting = true;
+                    return;
+                }
+            }
+            
+            // Left half for movement
             if (x < this.canvas.width / 2) {
-                // Movement touch - store canvas coordinates, not screen coordinates
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-                this.touchStartX = x * scaleX;
-                this.touchStartY = y * scaleY;
+                // Movement touch
+                this.touchStartX = canvasX;
+                this.touchStartY = canvasY;
                 this.touchCurrentX = this.touchStartX;
                 this.touchCurrentY = this.touchStartY;
                 this.isTouching = true;
             } else {
                 if (this.state === 'playing') {
-                    // Action touch - continuous shooting
-                    this.input.shooting = true;
-                    
-                    // Double tap for dash
+                    // Double tap for dash (right side)
                     const now = Date.now();
                     if (this.lastTapTime && now - this.lastTapTime < 300) {
                         this.input.dash = true;
@@ -270,18 +296,23 @@ class Game {
                 const deltaY = this.touchCurrentY - this.touchStartY;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 
-                // Dead zone of 5 pixels for better responsiveness
-                if (distance > 5) {
-                    // Normalize direction
-                    this.input.direction.x = deltaX / distance;
-                    this.input.direction.y = deltaY / distance;
+                // Increased dead zone to 15 pixels for less sensitivity
+                const deadZone = 15;
+                const maxDist = 80; // Virtual joystick radius
+                
+                if (distance > deadZone) {
+                    // Calculate normalized direction with reduced sensitivity
+                    const effectiveDistance = distance - deadZone;
+                    const maxEffectiveDistance = maxDist - deadZone;
                     
-                    // Clamp to unit circle
-                    const maxDist = 80; // Increased virtual joystick radius for mobile
-                    if (distance > maxDist) {
-                        this.input.direction.x *= maxDist / distance;
-                        this.input.direction.y *= maxDist / distance;
-                    }
+                    // Apply cubic curve for smoother control (less sensitive near center)
+                    const normalizedDistance = Math.min(effectiveDistance / maxEffectiveDistance, 1);
+                    const curvedDistance = normalizedDistance * normalizedDistance * normalizedDistance;
+                    
+                    // Apply direction with reduced sensitivity
+                    const sensitivity = 0.6; // Reduce overall sensitivity
+                    this.input.direction.x = (deltaX / distance) * curvedDistance * sensitivity;
+                    this.input.direction.y = (deltaY / distance) * curvedDistance * sensitivity;
                 } else {
                     this.input.direction.x = 0;
                     this.input.direction.y = 0;
@@ -291,7 +322,31 @@ class Game {
         
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-            // Check which touch ended
+            
+            // Check if shoot button was released
+            if (this.shootButton.pressed) {
+                let shootButtonStillPressed = false;
+                for (let touch of e.touches) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
+                    const y = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
+                    
+                    if (x >= this.shootButton.x && 
+                        x <= this.shootButton.x + this.shootButton.width &&
+                        y >= this.shootButton.y && 
+                        y <= this.shootButton.y + this.shootButton.height) {
+                        shootButtonStillPressed = true;
+                        break;
+                    }
+                }
+                
+                if (!shootButtonStillPressed) {
+                    this.shootButton.pressed = false;
+                    this.input.shooting = false;
+                }
+            }
+            
+            // Check which touch ended for movement
             let movementTouchEnded = true;
             for (let touch of e.touches) {
                 const x = touch.clientX - this.canvas.getBoundingClientRect().left;
@@ -304,8 +359,6 @@ class Game {
                 this.isTouching = false;
                 this.input.direction.x = 0;
                 this.input.direction.y = 0;
-            } else {
-                this.input.shooting = false;
             }
         });
         
@@ -1053,28 +1106,63 @@ class Game {
             this.ctx.globalAlpha = 1;
         }
         
-        // Draw mobile touch zone indicators when game starts
-        if (this.state === 'playing' && 'ontouchstart' in window && !this.isTouching) {
-            this.ctx.globalAlpha = 0.1;
+        // Draw mobile controls
+        if (this.state === 'playing' && 'ontouchstart' in window) {
+            // Draw shoot button
+            this.ctx.save();
             
-            // Left side movement zone
-            this.ctx.fillStyle = Assets.colors.primary;
-            this.ctx.fillRect(0, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
+            // Button background with transparency
+            const buttonAlpha = this.shootButton.pressed ? 0.6 : 0.3;
+            this.ctx.globalAlpha = buttonAlpha;
             
-            // Right side action zone
-            this.ctx.fillStyle = Assets.colors.enemy;
-            this.ctx.fillRect(this.canvas.width * 0.5, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
+            // Circular button background
+            this.ctx.fillStyle = Assets.colors.danger;
+            this.ctx.beginPath();
+            this.ctx.arc(
+                this.shootButton.x + this.shootButton.width / 2,
+                this.shootButton.y + this.shootButton.height / 2,
+                this.shootButton.width / 2,
+                0, Math.PI * 2
+            );
+            this.ctx.fill();
             
-            // Zone labels
-            this.ctx.globalAlpha = 0.3;
-            this.ctx.font = '16px monospace';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillStyle = Assets.colors.primary;
-            this.ctx.fillText('MOVE', this.canvas.width * 0.25, this.canvas.height * 0.75);
-            this.ctx.fillStyle = Assets.colors.enemy;
-            this.ctx.fillText('SHOOT/DASH', this.canvas.width * 0.75, this.canvas.height * 0.75);
+            // Button border
+            this.ctx.globalAlpha = 0.8;
+            this.ctx.strokeStyle = Assets.colors.danger;
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
             
+            // Fire icon/text
             this.ctx.globalAlpha = 1;
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.font = 'bold 24px monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(
+                'FIRE',
+                this.shootButton.x + this.shootButton.width / 2,
+                this.shootButton.y + this.shootButton.height / 2
+            );
+            
+            this.ctx.restore();
+            
+            // Draw touch zone hints when not touching
+            if (!this.isTouching && !this.shootButton.pressed) {
+                this.ctx.globalAlpha = 0.1;
+                
+                // Left side movement zone
+                this.ctx.fillStyle = Assets.colors.primary;
+                this.ctx.fillRect(0, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
+                
+                // Zone labels
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.font = '16px monospace';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = Assets.colors.primary;
+                this.ctx.fillText('MOVE', this.canvas.width * 0.25, this.canvas.height * 0.75);
+                
+                this.ctx.globalAlpha = 1;
+            }
         }
         
         // Draw dash cooldown indicator
