@@ -164,24 +164,50 @@ class Game {
 
     resizeCanvas() {
         const aspectRatio = 9 / 16; // Vertical orientation
-        const maxWidth = 400;
-        const maxHeight = 800;
+        const isMobile = 'ontouchstart' in window;
+        const maxWidth = isMobile ? window.innerWidth : 400;
+        const maxHeight = isMobile ? window.innerHeight : 800;
         
         let width = window.innerWidth;
         let height = window.innerHeight;
         
-        if (width > maxWidth) {
-            width = maxWidth;
-            height = width / aspectRatio;
-        }
-        
-        if (height > maxHeight) {
-            height = maxHeight;
-            width = height * aspectRatio;
+        // For mobile, use full screen dimensions
+        if (isMobile) {
+            // Account for browser UI
+            const availableHeight = window.innerHeight;
+            const availableWidth = window.innerWidth;
+            
+            // Fit to screen while maintaining aspect ratio
+            if (availableWidth / availableHeight > aspectRatio) {
+                // Height limited
+                height = availableHeight;
+                width = height * aspectRatio;
+            } else {
+                // Width limited
+                width = availableWidth;
+                height = width / aspectRatio;
+            }
+        } else {
+            // Desktop sizing
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
         }
         
         this.canvas.width = width;
         this.canvas.height = height;
+        
+        // Center the canvas
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.left = '50%';
+        this.canvas.style.top = '50%';
+        this.canvas.style.transform = 'translate(-50%, -50%)';
     }
 
     setupControls() {
@@ -199,11 +225,13 @@ class Game {
             
             // Left half for movement, right half for shooting/actions
             if (x < this.canvas.width / 2) {
-                // Movement touch
-                this.touchStartX = touch.clientX;
-                this.touchStartY = touch.clientY;
-                this.touchCurrentX = touch.clientX;
-                this.touchCurrentY = touch.clientY;
+                // Movement touch - store canvas coordinates, not screen coordinates
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                this.touchStartX = x * scaleX;
+                this.touchStartY = y * scaleY;
+                this.touchCurrentX = this.touchStartX;
+                this.touchCurrentY = this.touchStartY;
                 this.isTouching = true;
             } else {
                 if (this.state === 'playing') {
@@ -229,22 +257,27 @@ class Game {
             e.preventDefault();
             if (this.isTouching && this.state === 'playing') {
                 const touch = e.touches[0];
-                this.touchCurrentX = touch.clientX;
-                this.touchCurrentY = touch.clientY;
+                const rect = this.canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                this.touchCurrentX = x * scaleX;
+                this.touchCurrentY = y * scaleY;
                 
                 // Calculate direction from initial touch point (virtual joystick)
                 const deltaX = this.touchCurrentX - this.touchStartX;
                 const deltaY = this.touchCurrentY - this.touchStartY;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 
-                // Dead zone of 10 pixels
-                if (distance > 10) {
+                // Dead zone of 5 pixels for better responsiveness
+                if (distance > 5) {
                     // Normalize direction
                     this.input.direction.x = deltaX / distance;
                     this.input.direction.y = deltaY / distance;
                     
                     // Clamp to unit circle
-                    const maxDist = 50; // Virtual joystick radius
+                    const maxDist = 80; // Increased virtual joystick radius for mobile
                     if (distance > maxDist) {
                         this.input.direction.x *= maxDist / distance;
                         this.input.direction.y *= maxDist / distance;
@@ -979,21 +1012,27 @@ class Game {
         
         // Draw touch controls feedback
         if (this.isTouching && this.state === 'playing') {
+            // Draw virtual joystick background
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.beginPath();
+            this.ctx.arc(this.touchStartX, this.touchStartY, 85, 0, Math.PI * 2);
+            this.ctx.fill();
+            
             // Draw virtual joystick
-            this.ctx.globalAlpha = 0.3;
+            this.ctx.globalAlpha = 0.5;
             
             // Outer circle
             this.ctx.strokeStyle = Assets.colors.primary;
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = 3;
             this.ctx.beginPath();
-            this.ctx.arc(this.touchStartX, this.touchStartY, 50, 0, Math.PI * 2);
+            this.ctx.arc(this.touchStartX, this.touchStartY, 80, 0, Math.PI * 2);
             this.ctx.stroke();
             
             // Inner circle (thumb position)
             const deltaX = this.touchCurrentX - this.touchStartX;
             const deltaY = this.touchCurrentY - this.touchStartY;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const maxDist = 50;
+            const maxDist = 80;
             
             let thumbX = this.touchCurrentX;
             let thumbY = this.touchCurrentY;
@@ -1005,8 +1044,32 @@ class Game {
             
             this.ctx.fillStyle = Assets.colors.primary;
             this.ctx.beginPath();
-            this.ctx.arc(thumbX, thumbY, 15, 0, Math.PI * 2);
+            this.ctx.arc(thumbX, thumbY, 20, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw mobile touch zone indicators when game starts
+        if (this.state === 'playing' && 'ontouchstart' in window && !this.isTouching) {
+            this.ctx.globalAlpha = 0.1;
+            
+            // Left side movement zone
+            this.ctx.fillStyle = Assets.colors.primary;
+            this.ctx.fillRect(0, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
+            
+            // Right side action zone
+            this.ctx.fillStyle = Assets.colors.enemy;
+            this.ctx.fillRect(this.canvas.width * 0.5, this.canvas.height * 0.5, this.canvas.width * 0.5, this.canvas.height * 0.5);
+            
+            // Zone labels
+            this.ctx.globalAlpha = 0.3;
+            this.ctx.font = '16px monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = Assets.colors.primary;
+            this.ctx.fillText('MOVE', this.canvas.width * 0.25, this.canvas.height * 0.75);
+            this.ctx.fillStyle = Assets.colors.enemy;
+            this.ctx.fillText('SHOOT/DASH', this.canvas.width * 0.75, this.canvas.height * 0.75);
             
             this.ctx.globalAlpha = 1;
         }
