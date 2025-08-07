@@ -5,10 +5,6 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // Set canvas size for mobile
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-        
         // Game state
         this.state = 'menu'; // menu, playing, paused, gameover
         this.wave = 1;
@@ -41,7 +37,7 @@ class Game {
         this.touchCurrentY = 0;
         this.isTouching = false;
         
-        // Mobile shoot button
+        // Mobile shoot button - initialize before resizeCanvas
         this.shootButton = {
             x: 0,
             y: 0,
@@ -49,6 +45,10 @@ class Game {
             height: 80,
             pressed: false
         };
+        
+        // Set canvas size for mobile (after shootButton is initialized)
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
         
         // Input state
         this.input = {
