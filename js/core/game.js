@@ -1400,10 +1400,3 @@ class Game {
         }
     }
 }
-
-// Start the game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const game = new Game();
-    console.log('Pixel Guardians: Earth\'s Last Stand v1.0.0');
-    console.log('Defend Earth! Controls: Drag to move, Tap to shoot');
-});
