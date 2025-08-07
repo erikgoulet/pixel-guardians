@@ -125,22 +125,36 @@ class Game {
         this.setupControls();
         
         // Setup UI buttons
-        document.getElementById('start-button').addEventListener('click', () => {
-            console.log('Start button clicked');
-            try {
-                // Ensure audio context exists before resuming
-                if (Audio.audioContext) {
-                    Audio.resume().then(() => {
-                        console.log('Audio resumed');
-                    }).catch(err => {
-                        console.error('Audio resume error:', err);
-                    });
+        const startButton = document.getElementById('start-button');
+        console.log('Start button element:', startButton);
+        
+        if (startButton) {
+            // Also add touch event for mobile
+            const handleStart = () => {
+                console.log('Start button clicked/touched');
+                try {
+                    // Ensure audio context exists before resuming
+                    if (Audio.audioContext) {
+                        Audio.resume().then(() => {
+                            console.log('Audio resumed');
+                        }).catch(err => {
+                            console.error('Audio resume error:', err);
+                        });
+                    }
+                    this.startGame();
+                } catch (err) {
+                    console.error('Error starting game:', err);
                 }
-                this.startGame();
-            } catch (err) {
-                console.error('Error starting game:', err);
-            }
-        });
+            };
+            
+            startButton.addEventListener('click', handleStart);
+            startButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleStart();
+            });
+        } else {
+            console.error('Start button not found!')
+        }
         
         // Start menu soundtrack after a delay (desktop only - mobile needs user interaction)
         setTimeout(() => {
@@ -720,7 +734,9 @@ class Game {
 
     startGame() {
         console.log('Starting game...');
+        console.log('Current state:', this.state);
         this.state = 'playing';
+        console.log('New state:', this.state);
         this.wave = 1;
         this.score = 0;
         this.nextExtraLifeScore = 10000;
@@ -736,7 +752,11 @@ class Game {
         // Hide screens
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
-        if (startScreen) startScreen.classList.add('hidden');
+        console.log('Start screen element:', startScreen);
+        if (startScreen) {
+            startScreen.classList.add('hidden');
+            console.log('Start screen hidden');
+        }
         if (gameOverScreen) gameOverScreen.classList.add('hidden');
         
         // Create player
@@ -1026,12 +1046,7 @@ class Game {
     }
 
     update(deltaTime) {
-        if (this.state !== 'playing') return;
-        
-        // Update screen shake
-        Utils.screenShake.update(deltaTime);
-        
-        // Update touch feedback animations
+        // Always update touch feedback animations
         for (let i = this.touchFeedback.length - 1; i >= 0; i--) {
             const feedback = this.touchFeedback[i];
             feedback.life -= deltaTime * 2;
@@ -1043,10 +1058,15 @@ class Game {
             }
         }
         
-        // Update button animations
+        // Always update button animations
         if (this.shootButton.pressAnimation > 0) {
             this.shootButton.pressAnimation -= deltaTime * 3;
         }
+        
+        if (this.state !== 'playing') return;
+        
+        // Update screen shake
+        Utils.screenShake.update(deltaTime);
         
         // Update input
         this.updateKeyboardInput();
