@@ -39,22 +39,56 @@ class Game {
         this.movementTouchId = null; // Track which touch is for movement
         this.useDirectTouch = true; // Use direct touch control instead of virtual joystick
         
-        // Touchpad area for movement (bottom left)
+        // Control layout preference (left/right handed)
+        this.leftHanded = false; // Default right-handed layout
+        
+        // Touch feedback animations
+        this.touchFeedback = [];
+        
+        // Swipe detection for dash
+        this.swipeStartX = 0;
+        this.swipeStartY = 0;
+        this.swipeStartTime = 0;
+        this.swipeThreshold = 50; // Minimum swipe distance
+        this.swipeTimeLimit = 300; // Maximum time for swipe in ms
+        
+        // Touchpad area for movement (will be positioned based on handedness)
         this.touchpad = {
             x: 20,
             y: 0, // Will be set based on canvas height
-            width: 200,
-            height: 200,
-            visible: true
+            width: 200, // Will be responsive
+            height: 200, // Will be responsive
+            visible: true,
+            baseScale: 0.15 // 15% of screen width
         };
         
         // Mobile shoot button - initialize before resizeCanvas
         this.shootButton = {
             x: 0,
             y: 0,
-            width: 80,
-            height: 80,
-            pressed: false
+            width: 80, // Will be responsive
+            height: 80, // Will be responsive
+            pressed: false,
+            baseScale: 0.12, // 12% of screen width
+            pressAnimation: 0
+        };
+        
+        // Pause button for mobile
+        this.pauseButton = {
+            x: 0,
+            y: 40,
+            width: 40,
+            height: 40,
+            baseScale: 0.08
+        };
+        
+        // Settings/handedness toggle button for mobile
+        this.handsButton = {
+            x: 0,
+            y: 40,
+            width: 40,
+            height: 40,
+            baseScale: 0.08
         };
         
         // Set canvas size for mobile (after shootButton is initialized)
@@ -241,12 +275,44 @@ class Game {
         this.canvas.style.top = '50%';
         this.canvas.style.transform = 'translate(-50%, -50%)';
         
-        // Position shoot button (bottom right corner for mobile)
-        this.shootButton.x = this.canvas.width - this.shootButton.width - 20;
-        this.shootButton.y = this.canvas.height - this.shootButton.height - 20;
-        
-        // Position touchpad (bottom left corner)
-        this.touchpad.y = this.canvas.height - this.touchpad.height - 20;
+        // Scale controls based on screen size
+        const isMobile = 'ontouchstart' in window;
+        if (isMobile) {
+            // Responsive control sizing
+            this.touchpad.width = Math.floor(this.canvas.width * this.touchpad.baseScale);
+            this.touchpad.height = Math.floor(this.canvas.width * this.touchpad.baseScale);
+            
+            this.shootButton.width = Math.floor(this.canvas.width * this.shootButton.baseScale);
+            this.shootButton.height = Math.floor(this.canvas.width * this.shootButton.baseScale);
+            
+            this.pauseButton.width = Math.floor(this.canvas.width * this.pauseButton.baseScale);
+            this.pauseButton.height = Math.floor(this.canvas.width * this.pauseButton.baseScale);
+            
+            this.handsButton.width = Math.floor(this.canvas.width * this.handsButton.baseScale);
+            this.handsButton.height = Math.floor(this.canvas.width * this.handsButton.baseScale);
+            
+            // Position controls based on handedness
+            const margin = 20;
+            
+            if (this.leftHanded) {
+                // Left-handed: touchpad on right, shoot button on left
+                this.touchpad.x = this.canvas.width - this.touchpad.width - margin;
+                this.shootButton.x = margin;
+            } else {
+                // Right-handed: touchpad on left, shoot button on right
+                this.touchpad.x = margin;
+                this.shootButton.x = this.canvas.width - this.shootButton.width - margin;
+            }
+            
+            this.touchpad.y = this.canvas.height - this.touchpad.height - margin;
+            this.shootButton.y = this.canvas.height - this.shootButton.height - margin;
+            
+            // Pause button at top center-left
+            this.pauseButton.x = (this.canvas.width / 2) - this.pauseButton.width - 5;
+            
+            // Hands toggle button at top center-right
+            this.handsButton.x = (this.canvas.width / 2) + 5;
+        }
     }
 
     setupControls() {
@@ -269,6 +335,37 @@ class Game {
                 const canvasX = x * scaleX;
                 const canvasY = y * scaleY;
                 
+                // Add touch feedback ripple
+                this.touchFeedback.push({
+                    x: canvasX,
+                    y: canvasY,
+                    radius: 0,
+                    maxRadius: 40,
+                    alpha: 0.5,
+                    life: 0.5
+                });
+                
+                // Check if pause button is pressed (mobile only)
+                if ('ontouchstart' in window && this.state === 'playing') {
+                    if (canvasX >= this.pauseButton.x && 
+                        canvasX <= this.pauseButton.x + this.pauseButton.width &&
+                        canvasY >= this.pauseButton.y && 
+                        canvasY <= this.pauseButton.y + this.pauseButton.height) {
+                        this.pauseGame();
+                        continue;
+                    }
+                    
+                    // Check if hands toggle button is pressed
+                    if (canvasX >= this.handsButton.x && 
+                        canvasX <= this.handsButton.x + this.handsButton.width &&
+                        canvasY >= this.handsButton.y && 
+                        canvasY <= this.handsButton.y + this.handsButton.height) {
+                        this.leftHanded = !this.leftHanded;
+                        this.resizeCanvas();
+                        continue;
+                    }
+                }
+                
                 // Check if shoot button is pressed (mobile only)
                 if ('ontouchstart' in window && this.state === 'playing') {
                     if (canvasX >= this.shootButton.x && 
@@ -276,6 +373,7 @@ class Game {
                         canvasY >= this.shootButton.y && 
                         canvasY <= this.shootButton.y + this.shootButton.height) {
                         this.shootButton.pressed = true;
+                        this.shootButton.pressAnimation = 1.0;
                         this.input.shooting = true;
                         continue; // Process next touch
                     }
@@ -310,14 +408,17 @@ class Game {
                         
                         this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
                     }
-                } else if (x >= this.canvas.width / 2) {
+                    
+                    // Record swipe start for dash detection
+                    this.swipeStartX = canvasX;
+                    this.swipeStartY = canvasY;
+                    this.swipeStartTime = Date.now();
+                } else if (canvasX >= this.canvas.width / 2) {
                     if (this.state === 'playing') {
-                        // Double tap for dash (right side)
-                        const now = Date.now();
-                        if (this.lastTapTime && now - this.lastTapTime < 300) {
-                            this.input.dash = true;
-                        }
-                        this.lastTapTime = now;
+                        // Record swipe start for dash on right side
+                        this.swipeStartX = canvasX;
+                        this.swipeStartY = canvasY;
+                        this.swipeStartTime = Date.now();
                     } else if (this.state === 'gameover') {
                         // Tap to restart
                         if (this.gameOverAnimation && this.gameOverAnimation.buttonAlpha > 0.5) {
@@ -443,6 +544,29 @@ class Game {
                     }
                 }
                 
+                // Check for swipe gesture (for dash)
+                if (this.state === 'playing' && this.swipeStartTime) {
+                    const swipeDuration = Date.now() - this.swipeStartTime;
+                    const swipeDistX = x - this.swipeStartX;
+                    const swipeDistY = y - this.swipeStartY;
+                    const swipeDistance = Math.sqrt(swipeDistX * swipeDistX + swipeDistY * swipeDistY);
+                    
+                    if (swipeDuration < this.swipeTimeLimit && swipeDistance > this.swipeThreshold) {
+                        // Valid swipe detected - perform dash
+                        const swipeAngle = Math.atan2(swipeDistY, swipeDistX);
+                        this.input.dash = true;
+                        
+                        // Set dash direction based on swipe
+                        if (this.player) {
+                            this.player.dashDirection.x = Math.cos(swipeAngle);
+                            this.player.dashDirection.y = Math.sin(swipeAngle);
+                        }
+                    }
+                    
+                    // Reset swipe tracking
+                    this.swipeStartTime = 0;
+                }
+                
                 // Check if the ended touch was the movement touch
                 if (touch.identifier === this.movementTouchId) {
                     this.isTouching = false;
@@ -538,7 +662,15 @@ class Game {
                         this.input.dash = true;
                         break;
                     case 'Escape':
+                    case 'p':
+                    case 'P':
                         this.pauseGame();
+                        break;
+                    case 'h':
+                    case 'H':
+                        // Toggle handedness
+                        this.leftHanded = !this.leftHanded;
+                        this.resizeCanvas();
                         break;
                 }
             } else if (this.state === 'gameover') {
@@ -899,6 +1031,23 @@ class Game {
         // Update screen shake
         Utils.screenShake.update(deltaTime);
         
+        // Update touch feedback animations
+        for (let i = this.touchFeedback.length - 1; i >= 0; i--) {
+            const feedback = this.touchFeedback[i];
+            feedback.life -= deltaTime * 2;
+            feedback.radius += deltaTime * 100;
+            feedback.alpha = feedback.life * 0.5;
+            
+            if (feedback.life <= 0) {
+                this.touchFeedback.splice(i, 1);
+            }
+        }
+        
+        // Update button animations
+        if (this.shootButton.pressAnimation > 0) {
+            this.shootButton.pressAnimation -= deltaTime * 3;
+        }
+        
         // Update input
         this.updateKeyboardInput();
         
@@ -919,7 +1068,19 @@ class Game {
             
             // Handle dash
             if (this.input.dash) {
-                this.player.dash(this.input.direction.x, this.input.direction.y);
+                // Use swipe direction if available, otherwise use current movement direction
+                let dashX = this.input.direction.x;
+                let dashY = this.input.direction.y;
+                
+                if (this.player.dashDirection && (this.player.dashDirection.x !== 0 || this.player.dashDirection.y !== 0)) {
+                    dashX = this.player.dashDirection.x;
+                    dashY = this.player.dashDirection.y;
+                    // Reset dash direction after use
+                    this.player.dashDirection.x = 0;
+                    this.player.dashDirection.y = 0;
+                }
+                
+                this.player.dash(dashX, dashY);
                 this.input.dash = false;
             }
         }
@@ -1168,6 +1329,18 @@ class Game {
         
         this.ctx.restore();
         
+        // Draw touch feedback ripples
+        for (let feedback of this.touchFeedback) {
+            this.ctx.save();
+            this.ctx.globalAlpha = feedback.alpha;
+            this.ctx.strokeStyle = Assets.colors.primary;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(feedback.x, feedback.y, feedback.radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+        
         // Draw touch controls feedback
         if (this.isTouching && this.state === 'playing') {
             if (this.useDirectTouch) {
@@ -1303,6 +1476,15 @@ class Game {
             // Draw shoot button
             this.ctx.save();
             
+            // Button scale animation when pressed
+            const buttonScale = 1 - (this.shootButton.pressAnimation * 0.1);
+            const buttonCenterX = this.shootButton.x + this.shootButton.width / 2;
+            const buttonCenterY = this.shootButton.y + this.shootButton.height / 2;
+            
+            this.ctx.translate(buttonCenterX, buttonCenterY);
+            this.ctx.scale(buttonScale, buttonScale);
+            this.ctx.translate(-buttonCenterX, -buttonCenterY);
+            
             // Button background with transparency
             const buttonAlpha = this.shootButton.pressed ? 0.6 : 0.3;
             this.ctx.globalAlpha = buttonAlpha;
@@ -1318,22 +1500,95 @@ class Game {
             );
             this.ctx.fill();
             
-            // Button border
-            this.ctx.globalAlpha = 0.8;
+            // Button border with glow when pressed
+            this.ctx.globalAlpha = this.shootButton.pressed ? 1.0 : 0.8;
             this.ctx.strokeStyle = Assets.colors.danger;
-            this.ctx.lineWidth = 3;
+            this.ctx.lineWidth = this.shootButton.pressed ? 4 : 3;
+            if (this.shootButton.pressed) {
+                this.ctx.shadowColor = Assets.colors.danger;
+                this.ctx.shadowBlur = 10;
+            }
             this.ctx.stroke();
             
             // Fire icon/text
             this.ctx.globalAlpha = 1;
+            this.ctx.shadowBlur = 0;
             this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.font = 'bold 24px monospace';
+            this.ctx.font = `bold ${Math.floor(this.shootButton.width * 0.3)}px monospace`;
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText(
                 'FIRE',
                 this.shootButton.x + this.shootButton.width / 2,
                 this.shootButton.y + this.shootButton.height / 2
+            );
+            
+            this.ctx.restore();
+            
+            // Draw pause button
+            this.ctx.save();
+            
+            // Pause button background
+            this.ctx.globalAlpha = 0.3;
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(this.pauseButton.x, this.pauseButton.y, this.pauseButton.width, this.pauseButton.height);
+            
+            // Pause button border
+            this.ctx.globalAlpha = 0.6;
+            this.ctx.strokeStyle = Assets.colors.secondary;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(this.pauseButton.x, this.pauseButton.y, this.pauseButton.width, this.pauseButton.height);
+            
+            // Pause icon (two vertical bars)
+            this.ctx.globalAlpha = 1;
+            this.ctx.fillStyle = Assets.colors.secondary;
+            const barWidth = this.pauseButton.width * 0.2;
+            const barHeight = this.pauseButton.height * 0.6;
+            const barSpacing = this.pauseButton.width * 0.15;
+            const barY = this.pauseButton.y + (this.pauseButton.height - barHeight) / 2;
+            
+            // Left bar
+            this.ctx.fillRect(
+                this.pauseButton.x + (this.pauseButton.width / 2) - barSpacing - barWidth,
+                barY,
+                barWidth,
+                barHeight
+            );
+            
+            // Right bar
+            this.ctx.fillRect(
+                this.pauseButton.x + (this.pauseButton.width / 2) + barSpacing,
+                barY,
+                barWidth,
+                barHeight
+            );
+            
+            this.ctx.restore();
+            
+            // Draw hands toggle button
+            this.ctx.save();
+            
+            // Hands button background
+            this.ctx.globalAlpha = 0.3;
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(this.handsButton.x, this.handsButton.y, this.handsButton.width, this.handsButton.height);
+            
+            // Hands button border
+            this.ctx.globalAlpha = 0.6;
+            this.ctx.strokeStyle = Assets.colors.warning;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(this.handsButton.x, this.handsButton.y, this.handsButton.width, this.handsButton.height);
+            
+            // Hand icon (simple representation)
+            this.ctx.globalAlpha = 1;
+            this.ctx.fillStyle = Assets.colors.warning;
+            this.ctx.font = `${Math.floor(this.handsButton.width * 0.6)}px monospace`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(
+                this.leftHanded ? 'L' : 'R',
+                this.handsButton.x + this.handsButton.width / 2,
+                this.handsButton.y + this.handsButton.height / 2
             );
             
             this.ctx.restore();
@@ -1402,6 +1657,18 @@ class Game {
         this.ctx.fillStyle = Assets.colors.powerup;
         this.ctx.textAlign = 'right';
         this.ctx.fillText(`NEXT 1UP: ${Utils.formatScore(this.nextExtraLifeScore)}`, this.canvas.width - 10, topPadding + 25);
+        
+        // Draw handedness indicator on mobile
+        if ('ontouchstart' in window) {
+            this.ctx.font = '10px "Courier New", monospace';
+            this.ctx.fillStyle = Assets.colors.secondary;
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(
+                this.leftHanded ? 'LEFT-HANDED MODE' : 'RIGHT-HANDED MODE', 
+                this.canvas.width / 2, 
+                this.canvas.height - 10
+            );
+        }
         
         // Draw extra life notification
         if (this.notificationTimer > 0 && this.extraLifeNotification) {
