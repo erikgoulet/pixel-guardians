@@ -113,6 +113,12 @@ const Audio = {
     // Toggle audio on/off
     toggle() {
         this.enabled = !this.enabled;
+        
+        // Stop soundtrack if audio is disabled
+        if (!this.enabled && this.soundtrack.isPlaying) {
+            this.stopSoundtrack();
+        }
+        
         return this.enabled;
     },
 

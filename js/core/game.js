@@ -121,10 +121,14 @@ class Game {
             // Handle soundtrack based on game state
             if (this.state === 'menu' || this.state === 'gameover') {
                 if (Audio.enabled && !wasEnabled) {
-                    Audio.startSoundtrack();
-                } else if (!Audio.enabled && wasEnabled) {
-                    Audio.stopSoundtrack();
+                    // Resume audio context first (important for mobile)
+                    Audio.resume();
+                    // Small delay to ensure context is ready
+                    setTimeout(() => {
+                        Audio.startSoundtrack();
+                    }, 100);
                 }
+                // Note: stopSoundtrack is now called in Audio.toggle() when disabling
             }
         });
         
@@ -166,6 +170,10 @@ class Game {
         // Touch controls with virtual joystick
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            
+            // Resume audio context on first touch (important for mobile)
+            Audio.resume();
+            
             const touch = e.touches[0];
             const rect = this.canvas.getBoundingClientRect();
             const x = touch.clientX - rect.left;
