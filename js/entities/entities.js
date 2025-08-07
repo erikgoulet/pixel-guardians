@@ -23,9 +23,9 @@ class Player {
         // Movement physics
         this.vx = 0;
         this.vy = 0;
-        this.acceleration = 800; // Reduced from 1200 for better mobile control
-        this.friction = 0.92; // Increased from 0.85 for less sliding
-        this.maxSpeed = 300; // Reduced from 350 for easier control
+        this.acceleration = 1600; // Increased for more responsive control
+        this.friction = 0.88; // Balanced friction for responsive but smooth movement
+        this.maxSpeed = 400; // Increased for better touchpad tracking
         
         // Movement constraints (will be updated in setCanvas)
         this.minY = 400; // Default, updated when canvas is set
@@ -269,6 +269,38 @@ class Player {
         this.canvasHeight = height;
         this.minY = height * 0.5; // Can move up to 50% of screen
         this.maxY = height - this.height - 20;
+    }
+    
+    // Direct position control for touchpad
+    setTargetPosition(targetX, targetY) {
+        // Calculate direction to target
+        const dx = targetX - (this.x + this.width / 2);
+        const dy = targetY - (this.y + this.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 5) {
+            // Strong acceleration towards target for responsive control
+            const force = Math.min(distance / 50, 1) * 2; // Scale force by distance
+            this.vx += (dx / distance) * this.acceleration * force * 0.016;
+            this.vy += (dy / distance) * this.acceleration * force * 0.016;
+            
+            // Apply stronger friction when close to target
+            if (distance < 30) {
+                this.vx *= 0.8;
+                this.vy *= 0.8;
+            }
+        } else {
+            // Stop when very close
+            this.vx *= 0.7;
+            this.vy *= 0.7;
+        }
+        
+        // Clamp velocity
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (speed > this.maxSpeed) {
+            this.vx = (this.vx / speed) * this.maxSpeed;
+            this.vy = (this.vy / speed) * this.maxSpeed;
+        }
     }
 
     addPowerup(type) {

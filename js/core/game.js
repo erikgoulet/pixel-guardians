@@ -37,6 +37,7 @@ class Game {
         this.touchCurrentY = 0;
         this.isTouching = false;
         this.movementTouchId = null; // Track which touch is for movement
+        this.useDirectTouch = true; // Use direct touch control instead of virtual joystick
         
         // Mobile shoot button - initialize before resizeCanvas
         this.shootButton = {
@@ -277,6 +278,18 @@ class Game {
                     this.touchCurrentX = this.touchStartX;
                     this.touchCurrentY = this.touchStartY;
                     this.isTouching = true;
+                    
+                    // For direct touch, immediately set target position
+                    if (this.useDirectTouch && this.player && this.state === 'playing') {
+                        let targetX = canvasX - this.player.width / 2;
+                        let targetY = canvasY - this.player.height / 2;
+                        
+                        // Constrain to playable area
+                        targetX = Math.max(0, Math.min(this.canvas.width - this.player.width, targetX));
+                        targetY = Math.max(this.canvas.height * 0.5, Math.min(this.canvas.height - this.player.height - 20, targetY));
+                        
+                        this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
+                    }
                 } else if (x >= this.canvas.width / 2) {
                     if (this.state === 'playing') {
                         // Double tap for dash (right side)
@@ -316,31 +329,40 @@ class Game {
                     this.touchCurrentX = x * scaleX;
                     this.touchCurrentY = y * scaleY;
                     
-                    // Calculate direction from initial touch point (virtual joystick)
-                    const deltaX = this.touchCurrentX - this.touchStartX;
-                    const deltaY = this.touchCurrentY - this.touchStartY;
-                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    
-                    // Increased dead zone to 15 pixels for less sensitivity
-                    const deadZone = 15;
-                    const maxDist = 80; // Virtual joystick radius
-                    
-                    if (distance > deadZone) {
-                        // Calculate normalized direction with reduced sensitivity
-                        const effectiveDistance = distance - deadZone;
-                        const maxEffectiveDistance = maxDist - deadZone;
-                        
-                        // Apply cubic curve for smoother control (less sensitive near center)
-                        const normalizedDistance = Math.min(effectiveDistance / maxEffectiveDistance, 1);
-                        const curvedDistance = normalizedDistance * normalizedDistance * normalizedDistance;
-                        
-                        // Apply direction with reduced sensitivity
-                        const sensitivity = 0.6; // Reduce overall sensitivity
-                        this.input.direction.x = (deltaX / distance) * curvedDistance * sensitivity;
-                        this.input.direction.y = (deltaY / distance) * curvedDistance * sensitivity;
+                    if (this.useDirectTouch) {
+                        // Direct touch control - ship follows finger
+                        if (this.player) {
+                            // Clamp target position within player bounds
+                            let targetX = this.touchCurrentX - this.player.width / 2;
+                            let targetY = this.touchCurrentY - this.player.height / 2;
+                            
+                            // Constrain to playable area
+                            targetX = Math.max(0, Math.min(this.canvas.width - this.player.width, targetX));
+                            targetY = Math.max(this.canvas.height * 0.5, Math.min(this.canvas.height - this.player.height - 20, targetY));
+                            
+                            this.player.setTargetPosition(targetX + this.player.width / 2, targetY + this.player.height / 2);
+                        }
                     } else {
-                        this.input.direction.x = 0;
-                        this.input.direction.y = 0;
+                        // Virtual joystick control
+                        const deltaX = this.touchCurrentX - this.touchStartX;
+                        const deltaY = this.touchCurrentY - this.touchStartY;
+                        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        
+                        // Reduced dead zone for more accuracy
+                        const deadZone = 5;
+                        const maxDist = 80; // Virtual joystick radius
+                        
+                        if (distance > deadZone) {
+                            // Linear response for direct control
+                            const normalizedDistance = Math.min(distance / maxDist, 1);
+                            
+                            // Direct linear mapping for accurate tracking
+                            this.input.direction.x = (deltaX / distance) * normalizedDistance;
+                            this.input.direction.y = (deltaY / distance) * normalizedDistance;
+                        } else {
+                            this.input.direction.x = 0;
+                            this.input.direction.y = 0;
+                        }
                     }
                 }
             }
@@ -847,7 +869,13 @@ class Game {
         
         // Update player
         if (this.player) {
-            this.player.update(deltaTime, this.input.direction);
+            // For direct touch control, skip direction-based update when touching
+            if (!this.useDirectTouch || !this.isTouching) {
+                this.player.update(deltaTime, this.input.direction);
+            } else {
+                // Just update position and physics without directional input
+                this.player.update(deltaTime, { x: 0, y: 0 });
+            }
             
             // Handle shooting
             if (this.input.shooting) {
@@ -1107,6 +1135,27 @@ class Game {
         
         // Draw touch controls feedback
         if (this.isTouching && this.state === 'playing') {
+            if (this.useDirectTouch) {
+                // Draw touch indicator for direct control
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.3;
+                
+                // Draw touch point
+                this.ctx.strokeStyle = Assets.colors.primary;
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 15, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Draw inner dot
+                this.ctx.fillStyle = Assets.colors.primary;
+                this.ctx.beginPath();
+                this.ctx.arc(this.touchCurrentX, this.touchCurrentY, 3, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            } else {
+                // Virtual joystick for non-direct control
             // Draw virtual joystick background
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             this.ctx.beginPath();
@@ -1143,6 +1192,7 @@ class Game {
             this.ctx.fill();
             
             this.ctx.globalAlpha = 1;
+            }
         }
         
         // Draw mobile controls
