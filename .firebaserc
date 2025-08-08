@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "pixel-games-arcade"
+    "default": "pixel-guardians-game",
+    "pixel-games-arcade": "pixel-games-arcade"
   }
 }

@@ -226,6 +226,6 @@ This will commit and push with a clean commit message, no Claude attribution.
 ## Deployment
 
 The game is self-contained and can be deployed to any static hosting:
-- GitHub Pages: Push to repo and enable Pages
-- Netlify/Vercel: Direct deployment from Git
-- Any web server: Upload all files maintaining structure
+- **Live Game**: https://pixel-guardians-game-97e0f.web.app
+- **Firebase Hosting**: Deploy with `firebase deploy`
+- **Other Options**: Netlify, Vercel, or any static web server
